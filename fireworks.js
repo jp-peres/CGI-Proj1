@@ -219,9 +219,6 @@ function createFirework(){
         gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(buffData));
         currOff += nextOff;
     }
-
-
-    
     numbFragments += auxNumbFragments;
 }
 
