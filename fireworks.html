@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader-fragments" type="x-shader/x-vertex">
+attribute float vETime;
+attribute vec2 vEVel;
+attribute vec4 vPosition;
+attribute vec2 vInitVel;
+attribute float vInitialTime;
+
+uniform float uTime;
+float aceleration = -0.5;
+
+void test(float v, vec2 derp){
+    
+}
+void test2(float v){
+
+}
+void test3(vec4 v){
+
+}
+
+
+
+void main(){
+    float currTime = (uTime - vInitialTime); 
+    test(vETime,vEVel);
+    test(vETime,vInitVel);
+    test2(vInitialTime);
+    test3(vPosition);
+    //gl_Position.y = vInitialTime;
+    gl_Position.w = 1.0;
+    gl_PointSize = 5.0;
+    gl_Position.x = vPosition.x + (vInitVel.x*currTime) + (0.5*0.0*currTime*currTime);
+    gl_Position.y = vPosition.y + (vInitVel.y*currTime) + (0.5*aceleration*currTime*currTime);
+}
+</script>
+<script id="vertex-shader-line" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    void main(){
+        gl_Position = vPosition;
+        gl_PointSize = 8.0;
+    }
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+void main() {
+    //
+    // Changes the color of the triangle
+    //
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+
+    // Changes the square point to a round one
+    float r = 0.0;
+    vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+    r = dot(cxy, cxy);
+    if (r > 1.0) {
+        discard;
+    }
+}
+</script>
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="fireworks.js"></script>
+</head>
+<body>
+    <title>Triangle</title>
+    <canvas id="gl-canvas" width="1024" height="600">
+        Oops... your browser doesn't support the HTML5 canvas element"
+    </canvas>
+</body>
+</html>
