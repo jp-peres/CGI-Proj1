@@ -185,6 +185,7 @@ function createFirework(){
     
     var initTime = currTime*TIMEFACTOR;
 
+    //
     /*var initVel = vec2(0.001,0.003);
     var pos = vec2(-0.3,0);
 
