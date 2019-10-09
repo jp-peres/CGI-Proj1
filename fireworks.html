@@ -7,9 +7,14 @@ attribute vec2 vEVel;
 attribute vec4 vPosition;
 attribute vec2 vInitVel;
 attribute float vInitialTime;
+attribute vec2 vEInitPos;
+
+
+
+vec2 newPos;
 
 uniform float uTime;
-float aceleration = -0.5;
+uniform float uAceleration;
 
 void test(float v, vec2 derp){
     
@@ -21,25 +26,29 @@ void test3(vec4 v){
 
 }
 
-
+vec2 currentPos(float currTime){
+    float x, y;
+    if (currTime<vETime)
+    {
+        x = vPosition.x + ((2.5*vInitVel.x)*currTime);
+        y = vPosition.y + ((2.5*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+    }
+    else {
+        x = vEInitPos.x + ((2.5*vEVel.x)*currTime);
+        y = vEInitPos.y + + ((2.5*vEVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+    }
+    return vec2(x,y);
+}
 
 void main(){
-    float currTime = (uTime - vInitialTime); 
+    float currTime = uTime - vInitialTime;
     test(vETime,vEVel);
     test(vETime,vInitVel);
     test2(vInitialTime);
     test3(vPosition);
-    //gl_Position.y = vInitialTime;
     gl_Position.w = 1.0;
     gl_PointSize = 5.0;
-    if (currTime < vETime)  {
-        gl_Position.x = vPosition.x + (vInitVel.x*currTime) + (0.5*0.0*currTime*currTime);
-        gl_Position.y = vPosition.y + (vInitVel.y*currTime) + (0.5*aceleration*currTime*currTime);
-    }
-    else {
-
-    }
-    // dd
+    gl_Position.xy = currentPos(currTime);
 }
 </script>
 <script id="vertex-shader-line" type="x-shader/x-vertex">
@@ -56,6 +65,11 @@ void main() {
     // Changes the color of the triangle
     //
     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+
+
+
+
+
 
     // Changes the square point to a round one
     float r = 0.0;

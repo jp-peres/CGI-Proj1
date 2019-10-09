@@ -15,20 +15,21 @@ var endPos;
 const MAXPOINTS = 64000;
 
 // Factor by time
-const TIMEFACTOR = 0.03;
+const TIMEFACTOR = 0.025;
+const EXPLOSFACTOR = 2.5;
 
 // Current time
 var currTime = 0.0;
 
-// Uniform location for time var
+// Uniform location vars
 var uTime;
-
+var uAceleration;
 // Total fragments at the moment
 var numbFragments = 0;
 
 var currOff = 0;
 
-var accelaration = -1.0;
+const accelaration = -0.35;
 
 //
 // Location vars
@@ -42,6 +43,7 @@ var vPosition;
 var vInitVel;
 var vInitialTime;
 var vETime;
+var vEInitPos;
 var vEVel;
 
 
@@ -96,7 +98,11 @@ window.onload = function init() {
 
     vEVel = gl.getAttribLocation(programFirework,"vEVel");
 
+    vEInitPos = gl.getAttribLocation(programFirework,"vEInitPos");
+
     uTime = gl.getUniformLocation(programFirework,"uTime");
+
+    uAceleration = gl.getUniformLocation(programFirework,"uAceleration");
 
     render();
 }
@@ -147,6 +153,22 @@ function spaceBar(ev){
 }
 
 
+function calculateExplosionCoords(initX, initY, initVeloc, expTime){
+    var expX = initX + ((EXPLOSFACTOR*initVeloc[0])*expTime);
+    var expY = initY + ((EXPLOSFACTOR*initVeloc[1])*expTime) + (0.5*accelaration*expTime*expTime);
+    return vec2(expX,expY);
+}
+
+function polarCoords(exploCoords){
+    var radius = Math.random();
+    if (radius > 0.2)
+        radius = radius%0.2;
+    var angle = Math.round(Math.random() * 360);
+    
+    var x = radius * Math.cos(angle) + exploCoords[0];
+    var y = radius * Math.sin(angle) + exploCoords[1];
+    return vec2(x,y);
+}
 
 
 // TODO: Generate points for firework
@@ -154,12 +176,15 @@ function spaceBar(ev){
 function createFirework(){
     var auxNumbFragments = Math.round(Math.random() * 240) + 10;
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
-    var initVel = subtract(endPos,startPos);
+    var initVel = vec2(endPos[0] - startPos[0],endPos[1]-startPos[1]);
+    console.log(initVel);
     //console.log(initVel);
-    var exploTime = Math.abs(initVel[1]/accelaration);
+    var exploTime = Math.abs((EXPLOSFACTOR*initVel[1])/accelaration);
+    var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime);
     //var exploTime = 0.7;
     
     var initTime = currTime*TIMEFACTOR;
+
     /*var initVel = vec2(0.001,0.003);
     var pos = vec2(-0.3,0);
 
@@ -179,25 +204,27 @@ function createFirework(){
     var buffData = [];
     for (var i = 0; i < auxNumbFragments; i++)
     {
-        var newVelX = Math.random();
-        var newVelY = Math.random();
+        var pointCoord = polarCoords(exploCoords);
+        var newVel = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
+        console.log("||||||||||||||||||||||||");
+        console.log("Coordenadas de explosao: " + exploCoords);
+        console.log("Coordenadas da velocidade: " + newVel);
         buffData.push(startPos[0]);
         buffData.push(startPos[1]);
         buffData.push(initVel[0]);
         buffData.push(initVel[1]);
-        buffData.push(newVelX);
-        buffData.push(newVelY);
+        buffData.push(newVel[0]);
+        buffData.push(newVel[1]);
+        buffData.push(exploCoords[0]);
+        buffData.push(exploCoords[1]);
         buffData.push(initTime);
         buffData.push(exploTime);
     }
-    console.log("Numb fragments- " + auxNumbFragments);
-    console.log("currOff- " + currOff);
-    console.log("buffData- " + buffData.length);
 
-    if (currOff + (32*auxNumbFragments) <= MAXPOINTS)
+    if (currOff + (40*auxNumbFragments) <= MAXPOINTS)
     {
         gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(buffData));
-        currOff = (currOff+(32*auxNumbFragments))%MAXPOINTS;
+        currOff = (currOff+(40*auxNumbFragments))%MAXPOINTS;
     }
     else    
     {
@@ -222,7 +249,6 @@ function createFirework(){
     numbFragments += auxNumbFragments;
 }
 
-
 // TODO: render not going well
 function render() {
     currTime += 1;
@@ -238,22 +264,26 @@ function render() {
     gl.useProgram(programFirework);
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
     
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 32, 0);
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 40, 0);
     gl.enableVertexAttribArray(vPosition);
 
-    gl.vertexAttribPointer(vInitVel, 2, gl.FLOAT, false, 32, 8);
+    gl.vertexAttribPointer(vInitVel, 2, gl.FLOAT, false, 40, 8);
     gl.enableVertexAttribArray(vInitVel);
 
-    gl.vertexAttribPointer(vEVel, 2, gl.FLOAT, false, 32, 16);
+    gl.vertexAttribPointer(vEVel, 2, gl.FLOAT, false, 40, 16);
     gl.enableVertexAttribArray(vEVel);
 
-    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, 32, 24);
+    gl.vertexAttribPointer(vEInitPos, 2, gl.FLOAT, false, 40, 24);
+    gl.enableVertexAttribArray(vEInitPos);
+
+    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, 40, 32);
     gl.enableVertexAttribArray(vInitialTime);
 
-    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, 32, 28);
+    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, 40, 36);
     gl.enableVertexAttribArray(vETime);
 
     gl.uniform1f(uTime,currTime*TIMEFACTOR);
+    gl.uniform1f(uAceleration,accelaration);
     gl.drawArrays(gl.POINTS,0,numbFragments);
     requestAnimationFrame(render);
 }
