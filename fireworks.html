@@ -7,14 +7,10 @@ attribute vec2 vEVel;
 attribute vec4 vPosition;
 attribute vec2 vInitVel;
 attribute float vInitialTime;
-attribute vec2 vEInitPos;
-
-
-
-vec2 newPos;
 
 uniform float uTime;
 uniform float uAceleration;
+uniform float uVelocityFactor;
 
 void test(float v, vec2 derp){
     
@@ -30,12 +26,19 @@ vec2 currentPos(float currTime){
     float x, y;
     if (currTime<vETime)
     {
-        x = vPosition.x + ((2.5*vInitVel.x)*currTime);
-        y = vPosition.y + ((2.5*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
+        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
     }
     else {
-        x = vEInitPos.x + ((2.5*vEVel.x)*currTime);
-        y = vEInitPos.y + + ((2.5*vEVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+        float aux = currTime - vETime;
+        
+        // current position
+        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
+        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+
+        // explosion position
+        x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
+        y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
     }
     return vec2(x,y);
 }
@@ -65,10 +68,6 @@ void main() {
     // Changes the color of the triangle
     //
     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-
-
-
-
 
 
     // Changes the square point to a round one
