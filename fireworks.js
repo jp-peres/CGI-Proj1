@@ -68,6 +68,7 @@ var vInitVel;
 var vInitialTime;
 var vETime;
 var vEVel;
+var fireworkRadius;
 
 
 // Uniform location vars
@@ -132,6 +133,9 @@ window.onload = function init() {
     bfFirework = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
     gl.bufferData(gl.ARRAY_BUFFER, PARTICLESBUFFSIZE, gl.STATIC_DRAW);
+    // To mix the colors in the canvas
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.DST_ALPHA, gl.ONE, gl.ONE);
+    gl.enable(gl.BLEND);
 
     // Assigining AttributeLoc vars and Uniforms from shader
     vPosition = gl.getAttribLocation(programFirework, "vPosition");
@@ -236,6 +240,17 @@ function generateNewColor(){
     return colorPallet[Math.round(val)];
 }
 
+// Generates opacity for firework fragments
+function controlOpacity(pointCoord,color){
+    if(Math.abs(pointCoord[0]) <= fireworkRadius/2 && Math.abs(pointCoord[1]) <= fireworkRadius/2){
+        color[3]= 1 - fireworkRadius - Math.abs(pointCoord[0]) - Math.abs(pointCoord[1]);
+    }
+    else{
+        color[3]= 0.3 - fireworkRadius + Math.abs(pointCoord[0]) + Math.abs(pointCoord[1]);
+    }
+    return vec4(color[0],color[1],color[2],color[3]);
+}
+
 // Calculate ExplosionCoordinates
 function calculateExplosionCoords(initX, initY, initVeloc, expTime){
     var expX = initX + ((VELOCITYFACTOR*initVeloc[0])*expTime);
@@ -245,13 +260,13 @@ function calculateExplosionCoords(initX, initY, initVeloc, expTime){
 
 // Polar Coords to generate a radial point
 function polarCoords(exploCoords){
-    var radius = Math.random();
-    if (radius > 0.2)
-        radius = radius%0.2;
+    fireworkRadius = Math.random();
+    if (fireworkRadius > 0.2)
+        fireworkRadius = fireworkRadius%0.2;
     var angle = Math.round(Math.random() * 360);
     
-    var x = radius * Math.cos(angle) + exploCoords[0];
-    var y = radius * Math.sin(angle) + exploCoords[1];
+    var x = fireworkRadius * Math.cos(angle) + exploCoords[0];
+    var y = fireworkRadius * Math.sin(angle) + exploCoords[1];
     return vec2(x,y);
 }
 
@@ -332,6 +347,8 @@ function createFirework(auto=false){
         buffData.push(color[0]);
         buffData.push(color[1]);
         buffData.push(color[2]);
+        //Update opacity
+        color = controlOpacity(pointCoord,color);
         buffData.push(color[3]);
     }
 
