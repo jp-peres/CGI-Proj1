@@ -11,8 +11,9 @@ var programLine, programFirework;
 // Boolean to control the drawing of the Aim Line
 var isAiming = false;
 
-// To start and end auto firework
+// Auto Firework vars
 var autoFirework = false;
+const AUTOSTART_YAXIS = -0.5;
 
 // Coords for the aim of the firework
 var startPos;
@@ -20,13 +21,13 @@ var endPos;
 var aimColor;
 
 // Number of bytes per particle
-const BYTESPERPARTICLE = 60;
+const BYTESPERPARTICLE = 48;
 
 // MAX NUMBER OF FRAGMENTS
-const BUFFSIZE = BYTESPERPARTICLE*64000;
+const PARTICLESBUFFSIZE = BYTESPERPARTICLE*64000;
 
 // AimLine Data Buffer Size in bytes
-const LINEBUFFSIZE = (2*2*4)+(4*4);
+const LINEBUFFSIZE = (2*2*4)+(4*4*2); // 48
 
 // Factor used to multiply time
 const TIMEFACTOR = 0.025;
@@ -68,18 +69,12 @@ var vInitVel;
 var vInitialTime;
 var vETime;
 var vEVel;
-var vE1Time;
-var vE1Vel;
 
 
 // Uniform location vars
 var uTime;
 var uAceleration;
 var uVelocityFactor;
-
-//
-// Color vars
-//
 
 // Color Pallet Array
 var colorPallet = [
@@ -115,7 +110,7 @@ window.onload = function init() {
      * Aim Line Shader Initialization
      *
      */
-    programLine = initShaders(gl, "vertex-shader-line", "fragment-shader");
+    programLine = initShaders(gl, "vertex-shader-line", "fragment-shader-particles");
     gl.useProgram(programLine);
     bfLine = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,bfLine);
@@ -131,13 +126,13 @@ window.onload = function init() {
      * Firework Shader Initialization
      *
      */
-    programFirework = initShaders(gl, "vertex-shader-fragments", "fragment-shader");
+    programFirework = initShaders(gl, "vertex-shader-particles", "fragment-shader-particles");
     gl.useProgram(programFirework);
 
   
     bfFirework = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
-    gl.bufferData(gl.ARRAY_BUFFER, BUFFSIZE, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, PARTICLESBUFFSIZE, gl.STATIC_DRAW);
 
     // Assigining AttributeLoc vars and Uniforms from shader
     vPosition = gl.getAttribLocation(programFirework, "vPosition");
@@ -150,10 +145,6 @@ window.onload = function init() {
 
     vEVel = gl.getAttribLocation(programFirework,"vEVel");
 
-    vE1Time = gl.getAttribLocation(programFirework,"vE1Time");
-
-    vE1Vel = gl.getAttribLocation(programFirework,"vE1Vel");
-
     vColor = gl.getAttribLocation(programFirework,"vColor");
 
     uTime = gl.getUniformLocation(programFirework,"uTime");
@@ -165,13 +156,13 @@ window.onload = function init() {
     render();
 }
 
+
+
 /*
  *
  * Event related functions
  *
  */
-
-
 function mouseDown(ev){
     if (ev.which == 1)
     {
@@ -179,9 +170,10 @@ function mouseDown(ev){
         startPos = endPos = getMousePos(ev);
         aimColor = generateNewColor();
         gl.bindBuffer(gl.ARRAY_BUFFER,bfLine);
-        gl.bufferSubData(gl.ARRAY_BUFFER,0,flatten(aimColor));
-        gl.bufferSubData(gl.ARRAY_BUFFER,4*4,flatten(startPos));
-        gl.bufferSubData(gl.ARRAY_BUFFER,5*4,flatten(endPos));
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,flatten(startPos));
+        gl.bufferSubData(gl.ARRAY_BUFFER,4*2,flatten(endPos));
+        gl.bufferSubData(gl.ARRAY_BUFFER,4*4,flatten(aimColor));
+        gl.bufferSubData(gl.ARRAY_BUFFER,(4*4)+(4*4),flatten(aimColor));
     }
 }
 
@@ -213,14 +205,12 @@ function spaceBar(ev){
 }
 
 
-// Auxiliary Functions
+/*
+ *
+ * Auxiliary Functions (for certain calculations)
+ * 
+ */
 
-
-// Point Generator in range of [-0.5,0.5]
-function getPointsBetween(){
-    var num = Math.random();
-    return (Math.ceil(Math.random()) == 1) ? (num*1)/2 : num*(-1)/2;
-}
 
 // Generates a random vec4 from the color pallet
 function generateNewColor(){
@@ -235,7 +225,7 @@ function calculateExplosionCoords(initX, initY, initVeloc, expTime){
     return vec2(expX,expY);
 }
 
-// Polar Coords to generate radial effect
+// Polar Coords to generate a radial point
 function polarCoords(exploCoords){
     var radius = Math.random();
     if (radius > 0.2)
@@ -247,9 +237,30 @@ function polarCoords(exploCoords){
     return vec2(x,y);
 }
 
+// Calculate X in given time
+function generateXAxis(t)
+{
+    var x = Math.sin(t);
+    if (x >= 0.7)
+        x -= 0.15;
+    else if (x <= -0.7)
+        x += 0.15;
+   return x;
+}
 
-// TODO: Generate points for firework
+// Genrates a Y value between the range of [-0.5,0.5]
+function generateYAxis(){
+    var y = Math.random();
+    y = (Math.ceil(Math.random()) == 1) ? (y*1)/2 : y*(-1)/2;
+    if (y < -0.5)
+        y += 0.5;
+    else if (y > 0.5)
+        y -= 0.595;
+    return y;
+}
 
+
+// Main Firework Generation function
 function createFirework(auto=false){
     var auxNumbFragments = Math.round(Math.random() * 240) + 10;
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
@@ -258,22 +269,11 @@ function createFirework(auto=false){
     //Firework Auto Activated
     if(auto && !isAiming){
         //Lançamentos feitos na vertical
-        var xStart = Math.sin(currTime);
-        console.log(xStart);
-        if (xStart >= 0.7)
-            xStart -= 0.15;
-        else if (xStart <= -0.7)
-            xStart += 0.15;
-        var yStart = -0.5;
+        var xStart = generateXAxis(currTime);
+        var yStart = AUTOSTART_YAXIS;
         var xEnd = xStart;
-        var yEnd = getPointsBetween();
+        var yEnd = generateYAxis();
  
-        if(yEnd < -0.5){
-            yEnd = yEnd+0.5;
-        }
-        else if (yEnd > 0.5){
-            yEnd = yEnd-0.595;
-        }
         startPos = vec2(xStart, yStart);
         endPos = vec2(xEnd, yEnd);
         initVel = vec2(0,endPos[1]);
@@ -289,52 +289,48 @@ function createFirework(auto=false){
         return;
 
 
-    // Explosion calcs
+    // Explosion time calc
     var exploTime = Math.abs((VELOCITYFACTOR*initVel[1])/ACCELARATION);
-    console.log(exploTime);
-    // Explosions calcs
+    console.log("Explosion Time: "+ exploTime);
+    // Explosion coordinates calc
     var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime);
-    var pointCoord = polarCoords(exploCoords);
-    var newVel = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
-    var exploTime2 = exploTime + 2.0;
-    var exploCoords2 = calculateExplosionCoords(exploCoords[0], exploCoords[1], newVel, exploTime2);
-    var pointCoord2 = polarCoords(exploCoords2);
-    var newVel2 = vec2(pointCoord2[0]-exploCoords2[0],pointCoord2[1]-exploCoords2[1]);
-    // Particle init time
+    // Particle creation time
     var initTime = currTime*TIMEFACTOR;
 
     var buffData = [];
     for (var i = 0; i < auxNumbFragments; i++)
     {
+        
+        var pointCoord = polarCoords(exploCoords);
+        var newVel = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
         buffData.push(startPos[0]);
         buffData.push(startPos[1]);
         buffData.push(initVel[0]);
         buffData.push(initVel[1]);
         buffData.push(newVel[0]);
         buffData.push(newVel[1]);
-        buffData.push(newVel2[0]);
-        buffData.push(newVel2[1]);
         buffData.push(initTime);
         buffData.push(exploTime);
-        buffData.push(exploTime2);
         buffData.push(color[0]);
         buffData.push(color[1]);
         buffData.push(color[2]);
         buffData.push(color[3]);
     }
 
-    if (currOff + (BYTESPERPARTICLE*auxNumbFragments) <= BUFFSIZE)
+    if (currOff + (BYTESPERPARTICLE*auxNumbFragments) <= PARTICLESBUFFSIZE)
     {
         gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(buffData));
-        currOff = (currOff+(BYTESPERPARTICLE*auxNumbFragments))%BUFFSIZE;
+        currOff = (currOff+(BYTESPERPARTICLE*auxNumbFragments))%PARTICLESBUFFSIZE;
+        console.log("Current offSet: " + currOff);
     }
     else    
     {
         // Number of available bytes in the buffer of particles
-        var availableSpaceInBytes = BUFFSIZE-currOff;
+        var availableSpaceInBytes = PARTICLESBUFFSIZE-currOff;
+        console.log("Available Space In Bytes - "+totalNumbOfFloats);
         // Conversion of number of bytes to number of floats
         var totalNumbOfFloats = availableSpaceInBytes/4;
-
+        console.log("Total of floats to remove - "+totalNumbOfFloats);
         // Remove x floats equal to totalNumbOfFloats from buffData
         var subArr = buffData.splice(0,totalNumbOfFloats);
 
@@ -358,10 +354,10 @@ function render() {
     if (isAiming){
         gl.useProgram(programLine);
         gl.bindBuffer(gl.ARRAY_BUFFER,bfLine);  
-        gl.vertexAttribPointer(vLineColor, 4, gl.FLOAT, false, 24, 0);
-        gl.enableVertexAttribArray(vLineColor);
-        gl.vertexAttribPointer(vLinePos, 2, gl.FLOAT, false, 24, 16);
+        gl.vertexAttribPointer(vLinePos, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vLinePos);
+        gl.vertexAttribPointer(vLineColor, 4, gl.FLOAT, false, 0, 16);
+        gl.enableVertexAttribArray(vLineColor);
         gl.drawArrays(gl.POINTS,0,1);
         gl.drawArrays(gl.LINES,0,2);
     }
@@ -383,23 +379,15 @@ function render() {
     gl.vertexAttribPointer(vEVel, 2, gl.FLOAT, false, BYTESPERPARTICLE, 16);
     gl.enableVertexAttribArray(vEVel);
 
-    gl.vertexAttribPointer(vE1Vel, 2, gl.FLOAT, false, BYTESPERPARTICLE, 24);
-    gl.enableVertexAttribArray(vEVel);
-
-    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 32);
+    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 24);
     gl.enableVertexAttribArray(vInitialTime);
 
-    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 36);
+    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 28);
     gl.enableVertexAttribArray(vETime);
 
-    gl.vertexAttribPointer(vE1Time,1,gl.FLOAT,false, BYTESPERPARTICLE, 40);
-    gl.enableVertexAttribArray(vE1Time);
-
-    gl.vertexAttribPointer(vColor,4,gl.FLOAT,false, BYTESPERPARTICLE, 44);
+    gl.vertexAttribPointer(vColor, 4,gl.FLOAT,false, BYTESPERPARTICLE, 32);
     gl.enableVertexAttribArray(vColor);
     
-
-
 
     gl.uniform1f(uTime,currTime*TIMEFACTOR);
     gl.uniform1f(uAceleration,ACCELARATION);

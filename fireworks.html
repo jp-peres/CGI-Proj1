@@ -1,13 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script id="vertex-shader-fragments" type="x-shader/x-vertex">
+<script id="vertex-shader-particles" type="x-shader/x-vertex">
 // 1st explosion
 attribute float vETime;
 attribute vec2 vEVel;
-// 2nd explosion
-attribute float vE1Time;
-attribute vec2 vE1Vel;
 
 attribute vec4 vPosition;
 attribute vec2 vInitVel;
@@ -19,31 +16,23 @@ uniform float uTime;
 uniform float uAceleration;
 uniform float uVelocityFactor;
 
-void test(float v, vec2 derp){
-    
-}
-void test2(float v){
-
-}
-void test3(vec4 v){
-
-}
 
 vec2 currentPos(float currTime){
-    float x, y, movTime;
-    x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
-    y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
-    if (currTime>=vETime){
-        movTime = currTime - vETime;
-        // explosion position
-        x = x + (((uVelocityFactor/1.5)*vEVel.x)*movTime);
-        y = y + ((uVelocityFactor*vEVel.y)*movTime) + (0.5*uAceleration*movTime*movTime);
+    float x, y;
+    if (currTime<vETime)
+    {
+        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
+        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
     }
-    if (currTime>=(vE1Time*500000.0)) {
-        movTime = currTime - vE1Time;
-
-        x = x + (((uVelocityFactor/1.5)*vE1Vel.x)*movTime);
-        y = y + ((uVelocityFactor*vE1Vel.y)*movTime) + (0.5*uAceleration*movTime*movTime);
+    else {
+        float aux = currTime - vETime;
+        
+        // current position
+        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
+        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+        // explosion position
+        x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
+        y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
     }
     return vec2(x,y);
 }
@@ -66,7 +55,7 @@ void main(){
         fColor = vLineColor;
     }
 </script>
-<script id="fragment-shader" type="x-shader/x-fragment">
+<script id="fragment-shader-particles" type="x-shader/x-fragment">
 precision mediump float;
 varying vec4 fColor;
 void main() {
