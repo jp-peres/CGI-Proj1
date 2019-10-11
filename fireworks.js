@@ -1,8 +1,10 @@
 var gl;
+var canvas;
+var autoFireText;
+var timeoutVar;
 
 // BufferVars
 var bfLine, bfFirework;
-var canvas;
 
 // Program Vars
 var programLine, programFirework;
@@ -34,9 +36,6 @@ const TIMEFACTOR = 0.025;
 
 // Factor used to multiply the velocity
 const VELOCITYFACTOR = 2.5;
-
-// Factor used to multiply the explosion vector
-const EXPLOSIONFACTOR = 1;
 
 
 // Global time
@@ -88,9 +87,9 @@ var colorPallet = [
 
 
 
-
 window.onload = function init() {
     canvas = document.getElementById("gl-canvas");
+    autoFireText = document.getElementById("autoFireText");
     gl = WebGLUtils.setupWebGL(canvas);
     if(!gl) { alert("WebGL isn't available"); }
     
@@ -201,9 +200,28 @@ function getMousePos(ev){
 function spaceBar(ev){
     if (ev.which == 32){
         autoFirework = !autoFirework;
+        if (timeoutVar != null)
+            clearTimeout(timeoutVar);
+        showTextAutoON();
     }
 }
 
+function showTextAutoON(){
+    if (autoFirework){
+        autoFireText.innerHTML = "AutoFirework: ON";
+        autoFireText.style.color = "green";
+    }
+    else{
+        autoFireText.innerHTML = "AutoFirework: OFF";
+        autoFireText.style.color = "red";
+    }
+    autoFireText.style.opacity=1.0;
+    timeoutVar = setTimeout(hideText,2700);
+}
+
+function hideText(){
+    autoFireText.style.opacity = 0.0;
+}
 
 /*
  *
