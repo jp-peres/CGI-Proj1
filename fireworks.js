@@ -1,11 +1,7 @@
-// WebGL context stuff
 var gl;
 var canvas;
 
-// TESTING
-var angles = [0.0,0.0];
-
-// Html text elements
+// HTML Text elements
 var autoFireText, timeText;
 
 // BufferVars
@@ -14,64 +10,72 @@ var bfLine, bfFirework;
 // Program Vars
 var programLine, programFirework;
 
-var groupAng = 0.0;
-
-// Boolean to control the drawing of the Aim Line
+// Boolean flag to control the drawing of the Aim Line
 var isAiming = false;
 
 // Auto Firework vars
 var autoFirework = false;
 const AUTOSTART_YAXIS = -0.5;
 var timeoutVar;
-var timeoutInterval = 2000;
+const TIMEOUTINTERVAL = 2000;
 
-// stoof
-
-// Coords for the aim of the firework
-var startPos;
-var endPos;
-var aimColor;
-
-// Fireworktype
+// Angles for each type of firework
+var angles = [0.0,0.0];
+// Angle for 1 group of particles
+var groupAng = 0.0;
+// Fireworktype flag
 var fireworkType;
 
+// Coords for the aim of the firework and its color
+var startPos, endPos;
+var aimColor;
+
 // Number of bytes per particle
-const BYTESPERPARTICLE = 60; // 48 old
-
-// MAX NUMBER OF FRAGMENTS
-const PARTICLESBUFFSIZE = BYTESPERPARTICLE*64000;
-
+const BYTESPERPARTICLE = 60;
+// Max number of points in canvas
+const MAXPOINTS = 64000;
+// Particle Buffer Size
+const PARTICLESBUFFSIZE = BYTESPERPARTICLE*MAXPOINTS;
 // AimLine Data Buffer Size in bytes
 const LINEBUFFSIZE = (2*2*4)+(4*4*2); // 48
-
 // Factor used to multiply time
 const TIMEFACTOR = 0.025;
-
 // Factor used to multiply the velocity
 const VELOCITYFACTOR = 2.5;
-
 // Max number of explosion groups
 const EXPLOSIONGROUPS = 99;
-
 // Global time
 var currTime = 0.0;
-
 // Total fragments at the moment
 var numbFragments = 0;
-
 // Current buffer offset
-var currOff = 0;
-
+var particleBufferCurrOff = 0;
 // Acceleration constant
 const ACCELARATION = -0.35;
 
-// Create a new firework 30s-30s
+// Create a new firework 30s-30s and currAutoFireWork color
 const AUTOFIREWORKINTERVAL = 30;
-
 var currAutoColor;
-//
-// Location vars
-//
+
+// Color Pallet Array
+var colorPallet = [
+    vec4(1.0,0.0,0.3,1.0),
+    vec4(0.7,1.0,0.0,1.0),
+    vec4(0.0,0.56,1.0,1.0),
+    vec4(1.0,0.3,0.0,1.0),
+    vec4(0.69,0.5,1.0,1.0),
+    vec4(0.0,1.0,0.3,1.0),
+    vec4(1.0,0.0,0.0,1.0),
+    vec4(0.0,1.0,0.0,1.0),
+    vec4(0.0,0.0,1.0,1.0),
+    vec4(1.0,1.0,1.0,1.0)
+];
+
+/*
+ *
+ * Attributes and uniform locations
+ * 
+ */
 
 // Line vertex shader attribs
 var vLinePos;
@@ -87,25 +91,10 @@ var vEVel;
 var vEVel2;
 var fireworkRadius;
 
-
 // Uniform location vars
 var uTime;
 var uAceleration;
 var uVelocityFactor;
-
-// Color Pallet Array
-var colorPallet = [
-    vec4(1.0,0.0,0.3,1.0),
-    vec4(0.7,1.0,0.0,1.0),
-    vec4(0.0,0.56,1.0,1.0),
-    vec4(1.0,0.3,0.0,1.0),
-    vec4(0.69,0.5,1.0,1.0),
-    vec4(0.0,1.0,0.3,1.0),
-    vec4(1.0,0.0,0.0,1.0),
-    vec4(0.0,1.0,0.0,1.0),
-    vec4(0.0,0.0,1.0,1.0)
-];
-
 
 
 window.onload = function init() {
@@ -133,11 +122,11 @@ window.onload = function init() {
      */
     programLine = initShaders(gl, "vertex-shader-line", "fragment-shader-particles");
     gl.useProgram(programLine);
+    
     bfLine = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,bfLine);
     gl.bufferData(gl.ARRAY_BUFFER, LINEBUFFSIZE, gl.STATIC_DRAW);
 
-    // Assigning AttributeLoc vars
     vLinePos = gl.getAttribLocation(programLine, "vPosition");
     vLineColor = gl.getAttribLocation(programLine,"vLineColor");
     
@@ -150,7 +139,6 @@ window.onload = function init() {
     programFirework = initShaders(gl, "vertex-shader-particles", "fragment-shader-particles");
     gl.useProgram(programFirework);
 
-  
     bfFirework = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
     gl.bufferData(gl.ARRAY_BUFFER, PARTICLESBUFFSIZE, gl.STATIC_DRAW);
@@ -158,32 +146,21 @@ window.onload = function init() {
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.DST_ALPHA, gl.ONE, gl.ONE);
     gl.enable(gl.BLEND);
 
-    // Assigining AttributeLoc vars and Uniforms from shader
     vPosition = gl.getAttribLocation(programFirework, "vPosition");
-
     vInitVel = gl.getAttribLocation(programFirework, "vInitVel");
-
     vInitialTime = gl.getAttribLocation(programFirework,"vInitialTime");
-
     vETime = gl.getAttribLocation(programFirework,"vETime");
-
     vETime2 = gl.getAttribLocation(programFirework,"vETime2");
-
     vEVel = gl.getAttribLocation(programFirework,"vEVel");
-
     vEVel2 = gl.getAttribLocation(programFirework,"vEVel2");
-
     vColor = gl.getAttribLocation(programFirework,"vColor");
 
     uTime = gl.getUniformLocation(programFirework,"uTime");
-
     uAceleration = gl.getUniformLocation(programFirework,"uAceleration");
-
     uVelocityFactor = gl.getUniformLocation(programFirework,"uVelocityFactor"); 
 
     render();
 }
-
 
 
 /*
@@ -225,7 +202,6 @@ function getMousePos(ev){
     return vec2(x,y);
 }
 
-// Activates the flag to start AutoFirework
 function spaceBar(ev){
     if (ev.which == 32){
         autoFirework = !autoFirework;
@@ -245,7 +221,7 @@ function showTextAutoON(){
         autoFireText.style.color = "red";
     }
     autoFireText.style.opacity=1.0;
-    timeoutVar = setTimeout(hideText,timeoutInterval);
+    timeoutVar = setTimeout(hideText,TIMEOUTINTERVAL);
 }
 
 function hideText(){
@@ -262,14 +238,13 @@ function showTextTime(){
  * 
  */
 
-
-// Generates a random vec4 from the color pallet
+// Picks a random color from the color pallet
 function generateNewColor(){
     var val = Math.round(Math.random()*(colorPallet.length-1));
     return colorPallet[Math.round(val)];
 }
 
-// Generates opacity for firework fragments
+// Generates opacity for firework particles
 function controlOpacity(pointCoord,color){
     if(Math.abs(pointCoord[0]) <= fireworkRadius/2 && Math.abs(pointCoord[1]) <= fireworkRadius/2){
         color[3]= 1 - fireworkRadius - Math.abs(pointCoord[0]) - Math.abs(pointCoord[1]);
@@ -280,13 +255,14 @@ function controlOpacity(pointCoord,color){
     return vec4(color[0],color[1],color[2],color[3]);
 }
 
-// Calculate ExplosionCoordinates
+// Calculates Explosion Coordinates with given initLocation, velocity and explosionTime
 function calculateExplosionCoords(initX, initY, initVeloc, expTime){
     var expX = initX + ((VELOCITYFACTOR*initVeloc[0])*expTime);
     var expY = initY + ((VELOCITYFACTOR*initVeloc[1])*expTime) + (0.5*ACCELARATION*expTime*expTime);
     return vec2(expX,expY);
 }
 
+// Returns the angle for the given fireworkType
 function getAngle(){
     var res;
     switch(fireworkType){
@@ -303,6 +279,7 @@ function getAngle(){
     return res;
 }
 
+// Resets the angle of given fireworkType to a new angle
 function resetAngle(newAngle){
     switch(fireworkType){
         case 0:
@@ -314,6 +291,7 @@ function resetAngle(newAngle){
     }
 }
 
+// Updates current fireworkType angle
 function updateAngle(){
     switch(fireworkType){
         case 0:
@@ -325,14 +303,12 @@ function updateAngle(){
     }
 }
 
-// Polar Coords to generate a radial point
+// Polar Coordinates to generate a radial point
 function polarCoords(exploCoord){
     var currentAng = getAngle();
     fireworkRadius = Math.random();
     if (fireworkRadius > 0.2)
         fireworkRadius = fireworkRadius%0.2;
-    //var angle = Math.round(Math.random() * 360);
-    
 
     var x = fireworkRadius * Math.cos(currentAng) + exploCoord[0];
     var y = fireworkRadius * Math.sin(currentAng) + exploCoord[1];
@@ -340,9 +316,8 @@ function polarCoords(exploCoord){
     return vec2(x,y);
 }
 
-// Calculate X in given time
-function generateXAxis(t)
-{
+// Generates a X value with given time
+function generateXAxis(t) {
     var x = Math.sin(t);
     if (x >= 0.7)
         x -= 0.15;
@@ -352,7 +327,7 @@ function generateXAxis(t)
 }
 
 // Genrates a Y value between the range of [-0.5,0.5]
-function generateYAxis(){
+function generateYAxis() {
     var y = Math.random();
     y = (Math.ceil(Math.random()) == 1) ? (y*1)/2 : y*(-1)/2;
     if (y < -0.5)
@@ -363,15 +338,16 @@ function generateYAxis(){
 }
 
 // Get numberOfParticlesPerGroup and 
-// total numberOfGroups with given totalPartices
+// total numberOfGroups with given totalParticles
 function getParticles_N_Groups(totalParticles){
     var res = [];
     for (var i = EXPLOSIONGROUPS; i>0; i--){
         if (totalParticles%i == 0){
+            // Enforce to have atleast 2 particles per group
             if (totalParticles/i > 2){
                 res.push(i);
                 res.push(totalParticles/i);
-            }
+            } // otherwise only 1 group and all particles in that group
             else{
                 res.push(1);
                 res.push(totalParticles);
@@ -381,13 +357,20 @@ function getParticles_N_Groups(totalParticles){
     }
     return res;
 }
+
+
 // Main Firework Generation function
 function createFirework(auto=false){
+    
+    // Number of particles generated for this firework
     var particlesGenerated = Math.round(Math.random() * 240) + 10;
+    // Number of particles per group and number of groups of particles
     var particles_groups = getParticles_N_Groups(particlesGenerated);
+    // Firework type for this firework
     fireworkType = Math.round(Math.random()*2);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,bfFirework);
+    // Initial velocity and firework color
     var initVel;
     var color;
     //Firework Auto Activated
@@ -411,22 +394,24 @@ function createFirework(auto=false){
         return;
 
 
-    // Explosion time calc
+    // Explosion times calc
     var exploTime1 = Math.abs((VELOCITYFACTOR*initVel[1])/ACCELARATION);
     var exploTime2 = 0.0;
     if (particles_groups[0]>1)
         exploTime2 = exploTime1 + 0.575;
-    // Explosion coordinates calc
+
+    // 1st Explosition coordinates
     var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime1);
     // Particle creation time
     var initTime = currTime*TIMEFACTOR;
 
-
+    // Array that will fill our particlesDataBuffer
     var buffData = [];
+
     for (var g = 0; g < particles_groups[1]; g++){
         var pointCoord = polarCoords(exploCoords);
         groupAng = getAngle();
-        for(var i = 0; i < particles_groups[0]; i++){
+        for(var p = 0; p < particles_groups[0]; p++){
             var exploVel1 = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
             var exploCoords2 = calculateExplosionCoords(exploCoords[0],exploCoords[1], exploVel1, exploTime2);
             var pointCoords2 = polarCoords(exploCoords2);
@@ -459,29 +444,29 @@ function createFirework(auto=false){
     // Use buffer's available space to place all data if possible
     // Otherwise fill the remaining space of the buffer with data and
     // and the rest overwrite older particles
-    if (currOff + (BYTESPERPARTICLE*particlesGenerated) <= PARTICLESBUFFSIZE)
+    if (particleBufferCurrOff + (BYTESPERPARTICLE*particlesGenerated) <= PARTICLESBUFFSIZE)
     {
-        gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(buffData));
-        currOff = (currOff+(BYTESPERPARTICLE*particlesGenerated))%PARTICLESBUFFSIZE;
+        gl.bufferSubData(gl.ARRAY_BUFFER,particleBufferCurrOff,flatten(buffData));
+        particleBufferCurrOff = (particleBufferCurrOff+(BYTESPERPARTICLE*particlesGenerated))%PARTICLESBUFFSIZE;
     }
     else    
     {
         // Number of available bytes in the buffer of particles
-        var availableSpaceInBytes = PARTICLESBUFFSIZE-currOff;
+        var availableSpaceInBytes = PARTICLESBUFFSIZE-particleBufferCurrOff;
         // Conversion of number of bytes to number of floats
         var totalNumbOfFloats = availableSpaceInBytes/4;
         // Remove x floats equal to totalNumbOfFloats from buffData
         var subArr = buffData.splice(0,totalNumbOfFloats);
 
         // Fill the remaining space of the particles buffer
-        gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(subArr));
+        gl.bufferSubData(gl.ARRAY_BUFFER,particleBufferCurrOff,flatten(subArr));
         
         // Reset Offset
-        currOff = 0;
+        particleBufferCurrOff = 0;
         // Calculate the new offset based on the remaining elements on buffdata
         var nextOff = buffData.length*4;
-        gl.bufferSubData(gl.ARRAY_BUFFER,currOff,flatten(buffData));
-        currOff += nextOff;
+        gl.bufferSubData(gl.ARRAY_BUFFER,particleBufferCurrOff,flatten(buffData));
+        particleBufferCurrOff += nextOff;
     }
     numbFragments += particlesGenerated;
 }
