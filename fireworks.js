@@ -25,6 +25,7 @@ const AUTOSTART_YAXIS = -0.5;
 var timeoutVar;
 var timeoutInterval = 2000;
 
+// stoof
 
 // Coords for the aim of the firework
 var startPos;
