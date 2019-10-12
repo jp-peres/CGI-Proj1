@@ -14,6 +14,7 @@ var bfLine, bfFirework;
 // Program Vars
 var programLine, programFirework;
 
+var groupAng = 0.0;
 
 // Boolean to control the drawing of the Aim Line
 var isAiming = false;
@@ -34,7 +35,7 @@ var aimColor;
 var fireworkType;
 
 // Number of bytes per particle
-const BYTESPERPARTICLE = 48;
+const BYTESPERPARTICLE = 60; // 48 old
 
 // MAX NUMBER OF FRAGMENTS
 const PARTICLESBUFFSIZE = BYTESPERPARTICLE*64000;
@@ -80,7 +81,9 @@ var vPosition;
 var vInitVel;
 var vInitialTime;
 var vETime;
+var vETime2;
 var vEVel;
+var vEVel2;
 var fireworkRadius;
 
 
@@ -163,7 +166,11 @@ window.onload = function init() {
 
     vETime = gl.getAttribLocation(programFirework,"vETime");
 
+    vETime2 = gl.getAttribLocation(programFirework,"vETime2");
+
     vEVel = gl.getAttribLocation(programFirework,"vEVel");
+
+    vEVel2 = gl.getAttribLocation(programFirework,"vEVel2");
 
     vColor = gl.getAttribLocation(programFirework,"vColor");
 
@@ -295,6 +302,17 @@ function getAngle(){
     return res;
 }
 
+function resetAngle(newAngle){
+    switch(fireworkType){
+        case 0:
+            angles[0] = newAngle;
+        case 1:
+            angles[1] = newAngle;
+        default:
+            break;
+    }
+}
+
 function updateAngle(){
     switch(fireworkType){
         case 0:
@@ -349,9 +367,7 @@ function getParticles_N_Groups(totalParticles){
     var res = [];
     for (var i = EXPLOSIONGROUPS; i>0; i--){
         if (totalParticles%i == 0){
-            console.log("N groups:" + i);
-            console.log("N particles per group:" + totalParticles/i);
-            if (totalParticles/i > 4){
+            if (totalParticles/i > 2){
                 res.push(i);
                 res.push(totalParticles/i);
             }
@@ -385,12 +401,10 @@ function createFirework(auto=false){
         endPos = vec2(xEnd, yEnd);
         initVel = vec2(0,endPos[1]);
         color = currAutoColor;
-        console.log("Auto -" + initVel);
     }
     else if (!auto) {
         initVel = vec2(endPos[0] - startPos[0],endPos[1]-startPos[1]);
         color = aimColor;
-        console.log("Not auto- " + initVel);
     }
     else
         return;
@@ -398,10 +412,16 @@ function createFirework(auto=false){
 
     // Explosion time calc
     var exploTime1 = Math.abs((VELOCITYFACTOR*initVel[1])/ACCELARATION);
-    var exploTime2 = exploTime1 + (Math.random()*3+1.0);
-    console.log("Explosion Time: "+ exploTime1);
+    var exploTime2 = 0.0;
+    if (particles_groups[0]>1)
+        exploTime2 = exploTime1 + 0.575;
+    console.log('\n'+'\n'+'\n');
+    console.log("Init pos: " + startPos);
+    console.log("Explosion Time1: "+ exploTime1);
+    console.log("Explosion Time2: "+ exploTime2);
     // Explosion coordinates calc
     var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime1);
+    console.log("Explosion Coords: "+ exploCoords);
     // Particle creation time
     var initTime = currTime*TIMEFACTOR;
 
@@ -409,11 +429,16 @@ function createFirework(auto=false){
     var buffData = [];
     for (var g = 0; g < particles_groups[1]; g++){
         var pointCoord = polarCoords(exploCoords);
+        groupAng = getAngle();
         for(var i = 0; i < particles_groups[0]; i++){
             var exploVel1 = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
-            var exploCoords2 = calculateExplosionCoords(exploCoords[0],exploCoords[0], exploVel1, exploTime2);
+            console.log("Explosion 1 velocity- "+exploVel1);
+            var exploCoords2 = calculateExplosionCoords(exploCoords[0],exploCoords[1], exploVel1, exploTime2);
+            console.log("Explosion 2 Coords- "+exploCoords2);
             var pointCoords2 = polarCoords(exploCoords2);
+            console.log("Point coords- "+ pointCoords2);
             var exploVel2 = vec2(pointCoords2[0]-exploCoords2[0], pointCoords2[1]-exploCoords2[1]);
+            console.log("Explosion 2 velocity- "+exploVel2);
 
 
             buffData.push(startPos[0]);
@@ -422,15 +447,20 @@ function createFirework(auto=false){
             buffData.push(initVel[1]);
             buffData.push(exploVel1[0]);
             buffData.push(exploVel1[1]);
+            buffData.push(exploVel2[0]);
+            buffData.push(exploVel2[1]);
             buffData.push(initTime);
             buffData.push(exploTime1);
+            buffData.push(exploTime2);
             buffData.push(color[0]);
             buffData.push(color[1]);
             buffData.push(color[2]);
             //Update opacity
             color = controlOpacity(pointCoord,color);
             buffData.push(color[3]);
+            updateAngle();
         }
+        resetAngle(groupAng);
         updateAngle();
     }
     
@@ -502,11 +532,15 @@ function fireWorkDraw() {
     gl.enableVertexAttribArray(vInitVel);
     gl.vertexAttribPointer(vEVel, 2, gl.FLOAT, false, BYTESPERPARTICLE, 16);
     gl.enableVertexAttribArray(vEVel);
-    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 24);
+    gl.vertexAttribPointer(vEVel2, 2, gl.FLOAT, false, BYTESPERPARTICLE, 24);
+    gl.enableVertexAttribArray(vEVel2);
+    gl.vertexAttribPointer(vInitialTime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 32);
     gl.enableVertexAttribArray(vInitialTime);
-    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 28);
+    gl.vertexAttribPointer(vETime, 1, gl.FLOAT, false, BYTESPERPARTICLE, 36);
     gl.enableVertexAttribArray(vETime);
-    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, BYTESPERPARTICLE, 32);
+    gl.vertexAttribPointer(vETime2, 1, gl.FLOAT, false, BYTESPERPARTICLE, 40);
+    gl.enableVertexAttribArray(vETime2);
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, BYTESPERPARTICLE, 44);
     gl.enableVertexAttribArray(vColor);
     gl.uniform1f(uTime, currTime * TIMEFACTOR);
     gl.uniform1f(uAceleration, ACCELARATION);

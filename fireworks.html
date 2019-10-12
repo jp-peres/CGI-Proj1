@@ -51,6 +51,10 @@ canvas {
 attribute float vETime;
 attribute vec2 vEVel;
 
+// 2nd explosion
+attribute float vETime2;
+attribute vec2 vEVel2;
+
 attribute vec4 vPosition;
 attribute vec2 vInitVel;
 attribute float vInitialTime;
@@ -64,20 +68,33 @@ uniform float uVelocityFactor;
 
 vec2 currentPos(float currTime){
     float x, y;
-    if (currTime<vETime)
-    {
-        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
-        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
-    }
-    else {
+    x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
+    y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+
+    if (currTime>=vETime && currTime < vETime2) {
         float aux = currTime - vETime;
-        
-        // current position
-        x = vPosition.x + ((uVelocityFactor*vInitVel.x)*currTime);
-        y = vPosition.y + ((uVelocityFactor*vInitVel.y)*currTime) + (0.5*uAceleration*currTime*currTime);
+
         // explosion position
         x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
         y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
+    }
+    else if (currTime>=vETime && vETime2 == 0.0){
+        float aux = currTime - vETime;
+
+        // explosion position
+        x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
+        y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
+    }
+    else if (currTime>=vETime && currTime>=vETime2 && vETime2 != 0.0) {
+        float aux = currTime - vETime;
+
+        // explosion position
+        x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
+        y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
+        aux -= vETime2;
+        // explosion position
+        x = x + (((uVelocityFactor/1.5)*vEVel2.x)*aux);
+        y = y + ((uVelocityFactor*vEVel2.y)*aux) + (0.5*uAceleration*aux*aux);
     }
     return vec2(x,y);
 }
