@@ -91,7 +91,7 @@ vec2 currentPos(float currTime){
         // explosion position
         x = x + (((uVelocityFactor/1.5)*vEVel.x)*aux);
         y = y + ((uVelocityFactor*vEVel.y)*aux) + (0.5*uAceleration*aux*aux);
-        aux -= vETime2;
+        aux = currTime - vETime2;
         // explosion position
         x = x + (((uVelocityFactor/1.5)*vEVel2.x)*aux);
         y = y + ((uVelocityFactor*vEVel2.y)*aux) + (0.5*uAceleration*aux*aux);

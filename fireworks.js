@@ -415,13 +415,8 @@ function createFirework(auto=false){
     var exploTime2 = 0.0;
     if (particles_groups[0]>1)
         exploTime2 = exploTime1 + 0.575;
-    console.log('\n'+'\n'+'\n');
-    console.log("Init pos: " + startPos);
-    console.log("Explosion Time1: "+ exploTime1);
-    console.log("Explosion Time2: "+ exploTime2);
     // Explosion coordinates calc
     var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime1);
-    console.log("Explosion Coords: "+ exploCoords);
     // Particle creation time
     var initTime = currTime*TIMEFACTOR;
 
@@ -432,13 +427,9 @@ function createFirework(auto=false){
         groupAng = getAngle();
         for(var i = 0; i < particles_groups[0]; i++){
             var exploVel1 = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
-            console.log("Explosion 1 velocity- "+exploVel1);
             var exploCoords2 = calculateExplosionCoords(exploCoords[0],exploCoords[1], exploVel1, exploTime2);
-            console.log("Explosion 2 Coords- "+exploCoords2);
             var pointCoords2 = polarCoords(exploCoords2);
-            console.log("Point coords- "+ pointCoords2);
             var exploVel2 = vec2(pointCoords2[0]-exploCoords2[0], pointCoords2[1]-exploCoords2[1]);
-            console.log("Explosion 2 velocity- "+exploVel2);
 
 
             buffData.push(startPos[0]);
