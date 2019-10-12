@@ -1,3 +1,12 @@
+/*
+ *
+ * Trabalho realizado por:
+ * 
+ * Sara Trafaria Nº 41693
+ * João Peres Nº 48320
+ *
+ */
+
 var gl;
 var canvas;
 
@@ -46,8 +55,8 @@ const VELOCITYFACTOR = 2.5;
 const EXPLOSIONGROUPS = 99;
 // Global time
 var currTime = 0.0;
-// Total fragments at the moment
-var numbFragments = 0;
+// Total particles at the moment
+var numbParticles = 0;
 // Current buffer offset
 var particleBufferCurrOff = 0;
 // Acceleration constant
@@ -468,7 +477,7 @@ function createFirework(auto=false){
         gl.bufferSubData(gl.ARRAY_BUFFER,particleBufferCurrOff,flatten(buffData));
         particleBufferCurrOff += nextOff;
     }
-    numbFragments += particlesGenerated;
+    numbParticles += particlesGenerated;
 }
 
 
@@ -522,6 +531,6 @@ function fireWorkDraw() {
     gl.uniform1f(uTime, currTime * TIMEFACTOR);
     gl.uniform1f(uAceleration, ACCELARATION);
     gl.uniform1f(uVelocityFactor, VELOCITYFACTOR);
-    gl.drawArrays(gl.POINTS, 0, numbFragments);
+    gl.drawArrays(gl.POINTS, 0, numbParticles);
 }
 
