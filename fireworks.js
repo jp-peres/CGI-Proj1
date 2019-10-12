@@ -404,6 +404,8 @@ function createFirework(auto=false){
     var exploCoords = calculateExplosionCoords(startPos[0], startPos[1], initVel, exploTime1);
     // Particle creation time
     var initTime = currTime*TIMEFACTOR;
+    
+    var particlesRast = 0;
 
     // Array that will fill our particlesDataBuffer
     var buffData = [];
@@ -412,11 +414,16 @@ function createFirework(auto=false){
         var pointCoord = polarCoords(exploCoords);
         groupAng = getAngle();
         for(var p = 0; p < particles_groups[0]; p++){
+            
             var exploVel1 = vec2(pointCoord[0]-exploCoords[0],pointCoord[1]-exploCoords[1]);
             var exploCoords2 = calculateExplosionCoords(exploCoords[0],exploCoords[1], exploVel1, exploTime2);
             var pointCoords2 = polarCoords(exploCoords2);
             var exploVel2 = vec2(pointCoords2[0]-exploCoords2[0], pointCoords2[1]-exploCoords2[1]);
-
+            
+            if(particlesRast<50){
+                exploVel1 = vec2((-(initVel[0])),(-(initVel[1])));
+                exploVel2 = vec2((-(initVel[0])),(-(initVel[1])));
+            }
 
             buffData.push(startPos[0]);
             buffData.push(startPos[1]);
@@ -436,6 +443,8 @@ function createFirework(auto=false){
             color = controlOpacity(pointCoord,color);
             buffData.push(color[3]);
             updateAngle();
+            
+            particlesRast++;
         }
         resetAngle(groupAng);
         updateAngle();
