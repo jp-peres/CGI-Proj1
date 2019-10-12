@@ -7,7 +7,7 @@ html, body {
   position: absolute;
 }
 canvas {
-  border: 4px solid red;
+  border: 4px solid crimson;
 }
 #gl-canvas {
   position: absolute;
@@ -15,7 +15,7 @@ canvas {
   top: 0px;
 }
 #autoFireText {
-  margin-left: 380px;
+  margin-left: 320px;
   margin-top: 300px;
   font-size: 200%;
   opacity: 0;
@@ -28,7 +28,22 @@ canvas {
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none;
   pointer-events:none;
-  z-index: 2;
+  z-index: 1;
+}
+#timeText {
+  margin-left: 15px;
+  margin-top: 15px;
+  font-size: 75%;
+  opacity: 1.0;
+  position: fixed;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
+  pointer-events:none;
+  z-index: 1; 
 }
 </style>
 <script id="vertex-shader-particles" type="x-shader/x-vertex">
@@ -73,6 +88,10 @@ void main(){
     gl_PointSize = 5.0;
     gl_Position.xy = currentPos(currTime);
     fColor = vColor;
+    if (currTime > vETime){
+        if (fColor.w > 0.0)
+            fColor.w = fColor.w - 0.01;
+    }
 }
 </script>
 <script id="vertex-shader-line" type="x-shader/x-vertex">
@@ -111,7 +130,8 @@ void main() {
 </head>
 <body>
     <title>Fireworks</title>
-    <div id="autoFireText" style = "color:white;">hello</div>
+    <div id="autoFireText" style = "color:white;"></div>
+    <div id="timeText" style = "color:powderblue;"></div>
     <canvas id="gl-canvas" width="1024" height="600">
         Oops... your browser doesn't support the HTML5 canvas element"
     </canvas>
