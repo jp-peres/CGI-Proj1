@@ -421,8 +421,8 @@ function createFirework(auto=false){
             var exploVel2 = vec2(pointCoords2[0]-exploCoords2[0], pointCoords2[1]-exploCoords2[1]);
             
             if(particlesRast<50){
-                exploVel1 = vec2((-(initVel[0])),(-(initVel[1])));
-                exploVel2 = vec2((-(initVel[0])),(-(initVel[1])));
+                exploVel1 = vec2((-(initVel[0])),(-(initVel[1]+particlesRast)));
+                exploVel2 = vec2((-(initVel[0])),(-(initVel[1]+particlesRast)));
             }
 
             buffData.push(startPos[0]);
