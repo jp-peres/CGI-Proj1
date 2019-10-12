@@ -1,3 +1,5 @@
+// 41693- Sara Trafaria
+// 48320 - João Peres
 var gl;
 var canvas;
 
